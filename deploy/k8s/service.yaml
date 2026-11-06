@@ -1,0 +1,28 @@
+# HTTP interno: consumido por qualquer Ingress / Gateway API / mesh.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempmail-http
+  labels: {app.kubernetes.io/name: tempmail}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: tempmail}
+  ports:
+    - {name: http, port: 80, targetPort: http}
+---
+# SMTP publico (entrada de e-mails). HTTP Ingress nao serve para SMTP, entao
+# precisa de um LoadBalancer L4 (MetalLB, cloud LB) ou NodePort/hostPort.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempmail-smtp
+  labels: {app.kubernetes.io/name: tempmail}
+  # annotations:   # exemplos, dependem do seu ambiente:
+  #   metallb.universe.tf/address-pool: public
+  #   service.beta.kubernetes.io/aws-load-balancer-type: nlb
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local   # preserva o IP de origem
+  selector: {app.kubernetes.io/name: tempmail}
+  ports:
+    - {name: smtp, port: 25, targetPort: smtp, protocol: TCP}

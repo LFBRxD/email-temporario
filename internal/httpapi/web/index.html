@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail Temporário</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1><a href="/" title="Voltar para a última caixa">Mail Temporário</a></h1>
+  <p class="sub">Caixa de entrada descartável. Expira em 5 minutos, sem cadastro.
+    Acesse <code>/nome-da-caixa</code> para abrir ou criar uma caixa com esse nome.</p>
+</header>
+
+<main>
+  <nav id="boxes" class="boxes" aria-label="Minhas caixas" hidden></nav>
+
+  <section class="card addr-card">
+    <div class="addr-row">
+      <code id="addr">carregando…</code>
+      <button id="copy" type="button">Copiar endereço</button>
+      <button id="copylink" type="button" class="ghost">Copiar link</button>
+      <a id="new" class="btn ghost" href="/?new" target="_blank" rel="noopener">+ Nova caixa</a>
+    </div>
+    <div class="timer-row">
+      <span id="timer" class="timer">--:--</span>
+      <span id="status" class="muted">Aguardando mensagens…</span>
+    </div>
+    <div class="bar"><div id="bar-fill"></div></div>
+    <form id="open-form" class="open-form" autocomplete="off">
+      <label for="open-name" class="muted">Abrir ou criar caixa pelo nome:</label>
+      <input id="open-name" type="text" maxlength="32" placeholder="nome-da-caixa" spellcheck="false" autocapitalize="off">
+      <span id="domain" class="muted"></span>
+      <button type="submit" class="ghost">Abrir</button>
+    </form>
+  </section>
+
+  <div id="notice" class="card notice" hidden>
+    <span id="notice-text"></span>
+    <span class="notice-actions">
+      <button id="reopen" type="button" hidden>Reabrir esta caixa</button>
+      <a id="new2" class="btn" href="/?new">Criar nova caixa</a>
+    </span>
+  </div>
+
+  <section class="mail">
+    <ul id="list" class="card list" aria-label="Mensagens"></ul>
+    <article id="view" class="card view">
+      <p class="muted center">Selecione uma mensagem.</p>
+    </article>
+  </section>
+
+  <details class="card api">
+    <summary>Usar via API</summary>
+    <pre id="api-doc"></pre>
+  </details>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

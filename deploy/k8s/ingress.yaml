@@ -1,0 +1,26 @@
+# Ingress generico (nginx, traefik, haproxy, ALB...). Ajuste className/annotations
+# ao seu cluster. Se usar Gateway API, crie um HTTPRoute apontando para
+# o Service tempmail-http:80.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tempmail
+  labels: {app.kubernetes.io/name: tempmail}
+  annotations:
+    # cert-manager.io/cluster-issuer: letsencrypt
+    # nginx.ingress.kubernetes.io/proxy-read-timeout: "60"   # long-poll de ate 30s
+spec:
+  # ingressClassName: nginx
+  tls:
+    - hosts: [mail.example.com]
+      secretName: tempmail-tls
+  rules:
+    - host: mail.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tempmail-http
+                port: {name: http}

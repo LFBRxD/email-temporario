@@ -1,0 +1,26 @@
+# Standalone: nao depende de nenhum proxy. Sobe SMTP (25) e HTTP (8080 local).
+# Coloque na frente o proxy/LB que preferir (Caddy, nginx, Traefik...).
+# Para Caddy em Docker, use tambem:  -f docker-compose.caddy.yml
+# Copie .env.example para .env e defina DOMAIN antes de subir.
+services:
+  tempmail:
+    build: .
+    image: tempmail:latest
+    container_name: tempmail
+    restart: unless-stopped
+    environment:
+      DOMAIN: "${DOMAIN:?defina DOMAIN no .env, por exemplo mail.example.com}"
+      TTL_SECONDS: ${TTL_SECONDS:-300}
+      MAX_STORE_MB: ${MAX_STORE_MB:-1024}  # teto de mensagens em RAM; acima disso as mais antigas rotacionam
+      TRUST_PROXY: ${TRUST_PROXY:-true}    # true SOMENTE se ha proxy na frente que sobrescreve X-Forwarded-For
+      # true = um e-mail para um nome valido ainda inexistente cria a caixa (util p/ automacao).
+      # Padrao false: qualquer remetente poderia ocupar vagas de caixas. Limitado por IP (AUTO_CREATE_PER_MIN).
+      AUTO_CREATE_ON_MAIL: ${AUTO_CREATE_ON_MAIL:-false}
+    ports:
+      - "25:2525"                           # SMTP publico
+      - "${HTTP_BIND:-127.0.0.1:8080}:8080" # HTTP; so local por padrao (o proxy acessa aqui)
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: ${MEM_LIMIT:-1536m}          # >= MAX_STORE_MB x 1,5
+    pids_limit: 256

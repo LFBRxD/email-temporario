@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempmail
+  labels: {app.kubernetes.io/name: tempmail}
+spec:
+  # IMPORTANTE: o estado fica em memoria do processo -> exatamente 1 replica.
+  # Com 2+ pods cada um teria caixas diferentes e o e-mail cairia no pod errado.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app.kubernetes.io/name: tempmail}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: tempmail}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: tempmail
+          image: ghcr.io/OWNER/tempmail:latest   # <- troque pelo seu registry
+          imagePullPolicy: IfNotPresent
+          env:
+            - {name: DOMAIN, value: mail.example.com}
+            - {name: TTL_SECONDS, value: "300"}
+            # true = o Ingress/LB na frente sobrescreve X-Forwarded-For (o padrao
+            # dos ingress controllers comuns). Necessario p/ o rate limit por IP.
+            - {name: TRUST_PROXY, value: "true"}
+            # Teto de mensagens em RAM. Ao atingir, as mais antigas rotacionam.
+            # Mantenha limits.memory >= MAX_STORE_MB + ~50%.
+            - {name: MAX_STORE_MB, value: "1024"}
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: smtp, containerPort: 2525}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {memory: 1536Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}

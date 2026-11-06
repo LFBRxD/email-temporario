@@ -1,0 +1,9 @@
+# Override opcional: junta o container a rede Docker do Caddy.
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+# Ajuste o nome da rede (docker network ls). Caddyfile: reverse_proxy tempmail:8080
+services:
+  tempmail:
+    networks: [caddy]
+networks:
+  caddy:
+    external: true
