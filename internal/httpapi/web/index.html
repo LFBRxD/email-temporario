@@ -8,34 +8,11 @@
 </head>
 <body>
 <header>
-  <h1><a href="/" title="Voltar para a última caixa">Mail Temporário</a></h1>
-  <p class="sub">Caixa de entrada descartável. Expira em 5 minutos, sem cadastro.
-    Acesse <code>/nome-da-caixa</code> para abrir ou criar uma caixa com esse nome.</p>
+  <h1><a href="/">Mail Temporário</a></h1>
+  <p class="sub">Caixa de entrada descartável. Expira em 5 minutos, sem cadastro.</p>
 </header>
 
 <main>
-  <nav id="boxes" class="boxes" aria-label="Minhas caixas" hidden></nav>
-
-  <section class="card addr-card">
-    <div class="addr-row">
-      <code id="addr">carregando…</code>
-      <button id="copy" type="button">Copiar endereço</button>
-      <button id="copylink" type="button" class="ghost">Copiar link</button>
-      <a id="new" class="btn ghost" href="/?new" target="_blank" rel="noopener">+ Nova caixa</a>
-    </div>
-    <div class="timer-row">
-      <span id="timer" class="timer">--:--</span>
-      <span id="status" class="muted">Aguardando mensagens…</span>
-    </div>
-    <div class="bar"><div id="bar-fill"></div></div>
-    <form id="open-form" class="open-form" autocomplete="off">
-      <label for="open-name" class="muted">Abrir ou criar caixa pelo nome:</label>
-      <input id="open-name" type="text" maxlength="32" placeholder="nome-da-caixa" spellcheck="false" autocapitalize="off">
-      <span id="domain" class="muted"></span>
-      <button type="submit" class="ghost">Abrir</button>
-    </form>
-  </section>
-
   <div id="notice" class="card notice" hidden>
     <span id="notice-text"></span>
     <span class="notice-actions">
@@ -44,12 +21,53 @@
     </span>
   </div>
 
-  <section class="mail">
-    <ul id="list" class="card list" aria-label="Mensagens"></ul>
-    <article id="view" class="card view">
-      <p class="muted center">Selecione uma mensagem.</p>
-    </article>
+  <nav id="boxes" class="boxes" aria-label="Minhas caixas" hidden></nav>
+
+  <!-- Home: shown at "/" -->
+  <section id="welcome" class="card welcome" hidden>
+    <h2>Bem-vindo</h2>
+    <p>Receba e-mails (com anexos) numa caixa temporária, pela web ou pela API. Não precisa de conta:
+       a caixa existe por 5 minutos e depois some.</p>
+    <p>Para abrir ou criar uma caixa, acesse o endereço do site seguido do nome que quiser
+       (mínimo de 3 caracteres):</p>
+    <p><code id="example">/nome-da-caixa</code></p>
+    <form class="name-form" autocomplete="off">
+      <input type="text" maxlength="40" placeholder="nome-da-caixa" spellcheck="false" autocapitalize="off" aria-label="Nome da caixa">
+      <button type="submit">Abrir caixa</button>
+      <a class="btn ghost" href="/?new">Gerar caixa aleatória</a>
+    </form>
+    <p class="muted small">Quem souber o nome da caixa consegue lê-la. Não use para dados sensíveis.</p>
   </section>
+
+  <!-- Mailbox: shown at "/<name>" -->
+  <div id="box" hidden>
+    <section class="card addr-card">
+      <div class="addr-row">
+        <code id="addr">carregando…</code>
+        <button id="copy" type="button">Copiar endereço</button>
+        <button id="copylink" type="button" class="ghost">Copiar link</button>
+        <a id="new" class="btn ghost" href="/?new" target="_blank" rel="noopener">+ Nova caixa</a>
+      </div>
+      <div class="timer-row">
+        <span id="timer" class="timer">--:--</span>
+        <span id="status" class="muted">Aguardando mensagens…</span>
+      </div>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <form class="name-form open-form" autocomplete="off">
+        <label class="muted">Abrir ou criar outra caixa pelo nome:</label>
+        <input type="text" maxlength="40" placeholder="nome-da-caixa" spellcheck="false" autocapitalize="off" aria-label="Nome da caixa">
+        <span id="domain" class="muted"></span>
+        <button type="submit" class="ghost">Abrir</button>
+      </form>
+    </section>
+
+    <section class="mail">
+      <ul id="list" class="card list" aria-label="Mensagens"></ul>
+      <article id="view" class="card view">
+        <p class="muted center">Selecione uma mensagem.</p>
+      </article>
+    </section>
+  </div>
 
   <details class="card api">
     <summary>Usar via API</summary>

@@ -2,6 +2,8 @@ package inbox
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -88,7 +90,7 @@ func TestTTLIsNotRenewedByMail(t *testing.T) {
 func TestNames(t *testing.T) {
 	st, _ := newTest(Config{})
 	for _, bad := range []string{"ab", "-abc", "a b c", "UPPER_ok_but_>32_chars_long_xxxxxxxxxxxxxxxx", "a@b.c", "../x"} {
-		if _, err := st.Create(bad); err != ErrBadName {
+		if _, err := st.Create(bad); !errors.Is(err, ErrBadName) {
 			t.Errorf("%q: want ErrBadName, got %v", bad, err)
 		}
 	}
@@ -118,10 +120,32 @@ func TestBareNameResolvesToConfiguredDomain(t *testing.T) {
 	}
 }
 
+func TestCheckName(t *testing.T) {
+	cases := []struct {
+		name string
+		want error
+	}{
+		{"", ErrNameTooShort}, {"a", ErrNameTooShort}, {"ab", ErrNameTooShort},
+		{"abc", nil}, {"automacao202511012205222", nil}, {"a.b_c-d", nil},
+		{strings.Repeat("a", 32), nil}, {strings.Repeat("a", 33), ErrNameTooLong},
+		{"api", ErrNameReserved}, {"healthz", ErrNameReserved},
+		{"-abc", ErrNameChars}, {".abc", ErrNameChars}, {"a b", ErrNameChars}, {"a@b", ErrNameChars},
+		{"ABC", ErrNameChars}, // callers lower-case first
+	}
+	for _, c := range cases {
+		if got := CheckName(c.name); got != c.want {
+			t.Errorf("CheckName(%q) = %v, want %v", c.name, got, c.want)
+		}
+		if c.want != nil && !errors.Is(c.want, ErrBadName) {
+			t.Errorf("%v must wrap ErrBadName", c.want)
+		}
+	}
+}
+
 func TestReservedNames(t *testing.T) {
 	st, _ := newTest(Config{})
 	for _, n := range []string{"api", "healthz"} {
-		if _, err := st.Create(n); err != ErrBadName {
+		if _, err := st.Create(n); !errors.Is(err, ErrBadName) {
 			t.Errorf("%q must be reserved, got %v", n, err)
 		}
 	}

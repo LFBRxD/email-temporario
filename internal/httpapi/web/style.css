@@ -19,7 +19,13 @@ button:hover{filter:brightness(1.08)}
 .bar{height:4px;background:var(--line);border-radius:4px;margin-top:10px;overflow:hidden}
 #bar-fill{height:100%;width:100%;background:var(--accent);transition:width 1s linear}
 .notice{border-color:var(--warn);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.notice[hidden],.boxes[hidden]{display:none}
+[hidden]{display:none!important}
+.welcome h2{margin:0 0 8px}
+.welcome p{margin:8px 0}
+.welcome code{background:var(--bg);padding:4px 8px;border-radius:6px;word-break:break-all}
+.small{font-size:.85rem}
+.name-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.name-form input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);min-width:220px}
 a.btn{display:inline-block;font:inherit;border-radius:8px;padding:8px 14px;background:var(--accent);color:#fff;text-decoration:none;cursor:pointer}
 a.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
 .notice-actions{display:flex;gap:8px;flex-wrap:wrap}

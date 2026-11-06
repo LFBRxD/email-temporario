@@ -265,25 +265,51 @@ curl -X DELETE ${o}/api/inbox/${n}`;
     catch (e) { flash($("copylink"), "Copie da barra de endereço", "Copiar link"); }
   };
   $("reopen").onclick = () => location.reload(); // same /<name> URL: PUT recreates it
-  $("open-form").onsubmit = (e) => {
-    e.preventDefault();
-    const n = $("open-name").value.trim().toLowerCase();
-    if (!NAME_RE.test(n)) {
-      return notice("Nome inválido: use de 3 a 32 caracteres entre letras, números, ponto, hífen e sublinhado.", false);
-    }
-    location.href = "/" + enc(n);
-  };
+  // Both "open by name" forms just navigate: the server validates the name and,
+  // when it is bad, redirects to the welcome page with the reason.
+  for (const form of document.querySelectorAll(".name-form")) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const n = form.querySelector("input").value.trim().toLowerCase();
+      if (n) location.href = "/" + enc(n);
+    };
+  }
 
   // ---- start ----
-  renderList(); renderEmpty(); renderApiDoc(); renderBoxes();
+  const ERRORS = {
+    curto: "Nome da caixa de correio muito curto. Use pelo menos 3 caracteres.",
+    longo: "Nome da caixa de correio muito longo. Use no máximo 32 caracteres.",
+    reservado: "Este nome é reservado. Escolha outro.",
+    invalido: "Nome de caixa inválido. Use letras, números, ponto, hífen ou sublinhado, começando por letra ou número.",
+  };
+
+  function showWelcome() {
+    $("welcome").hidden = false;
+    $("example").textContent = location.origin + "/nome-da-caixa";
+    document.title = "Mail Temporário";
+    const code = new URLSearchParams(location.search).get("erro");
+    if (code) {
+      // Only known codes map to text; anything else in the URL is ignored.
+      notice(Object.prototype.hasOwnProperty.call(ERRORS, code) ? ERRORS[code] : "", false);
+      $("new2").hidden = true;
+      try { history.replaceState(null, "", "/"); } catch (e) {} // a refresh must not repeat the error
+    }
+    renderApiDoc(); renderBoxes();
+  }
+
+  function showBox() {
+    $("box").hidden = false;
+    renderList(); renderEmpty(); renderApiDoc(); renderBoxes();
+  }
+
   const name = pathName();
   if (name) {
+    showBox();
     enter("PUT", "/" + enc(name));
   } else if (new URLSearchParams(location.search).has("new")) {
+    showBox();
     enter("POST", "");
-  } else if (boxes.length) {
-    enter("PUT", "/" + enc(local(boxes[boxes.length - 1].address)));
   } else {
-    enter("POST", "");
+    showWelcome();
   }
 })();

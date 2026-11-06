@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,15 +29,42 @@ const (
 	generatedNameLen = 12 // 60 bits of entropy
 )
 
-var nameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{2,31}$`)
+const (
+	MinNameLen = 3
+	MaxNameLen = 32
+)
+
+// Name problems. All wrap ErrBadName, so errors.Is(err, ErrBadName) holds.
+var (
+	ErrNameTooShort = fmt.Errorf("%w: too short (minimum %d characters)", ErrBadName, MinNameLen)
+	ErrNameTooLong  = fmt.Errorf("%w: too long (maximum %d characters)", ErrBadName, MaxNameLen)
+	ErrNameReserved = fmt.Errorf("%w: reserved name", ErrBadName)
+	ErrNameChars    = fmt.Errorf("%w: use a-z, 0-9, '.', '_' or '-', starting with a letter or digit", ErrBadName)
+)
+
+var nameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 
 // reserved names would collide with HTTP routes (/api, /healthz).
 var reserved = map[string]bool{"api": true, "healthz": true}
 
-// ValidName reports whether name can be used as the local part of an inbox.
-func ValidName(name string) bool {
-	return nameRe.MatchString(name) && !reserved[name]
+// CheckName says why name cannot be an inbox local part (nil if it can).
+// name must already be lower-case.
+func CheckName(name string) error {
+	switch {
+	case len(name) < MinNameLen:
+		return ErrNameTooShort
+	case len(name) > MaxNameLen:
+		return ErrNameTooLong
+	case reserved[name]:
+		return ErrNameReserved
+	case !nameRe.MatchString(name):
+		return ErrNameChars
+	}
+	return nil
 }
+
+// ValidName reports whether name can be used as the local part of an inbox.
+func ValidName(name string) bool { return CheckName(name) == nil }
 
 // Config bounds the store. All limits are hard limits.
 type Config struct {
@@ -125,8 +153,10 @@ func randName(n int) string {
 // Create makes a new inbox. An empty name generates a random one.
 func (s *Store) Create(name string) (View, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
-	if name != "" && !ValidName(name) {
-		return View{}, ErrBadName
+	if name != "" {
+		if err := CheckName(name); err != nil {
+			return View{}, err
+		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

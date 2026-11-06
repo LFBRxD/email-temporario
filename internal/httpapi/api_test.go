@@ -271,10 +271,52 @@ func TestMailboxURLServesThePageButFilesAndRoutesWin(t *testing.T) {
 	if e.do("GET", "/healthz").Body.String() != "ok" {
 		t.Fatal("/healthz must not be shadowed by a mailbox page")
 	}
-	for _, p := range []string{"/ab", "/a%20b", "/api", "/-bad", "/x/y"} {
-		if c := e.do("GET", p).Code; c != 404 {
-			t.Errorf("GET %s: want 404, got %d", p, c)
+	if c := e.do("GET", "/x/y").Code; c != 404 {
+		t.Errorf("unknown deep path: want 404, got %d", c)
+	}
+}
+
+func TestBadMailboxNamesRedirectToWelcomeWithReason(t *testing.T) {
+	e := setup(t, nil)
+	cases := map[string]string{
+		"/a":                          "curto",
+		"/ab":                         "curto",
+		"/" + strings.Repeat("a", 33): "longo",
+		"/api":                        "reservado",
+		"/healthz2":                   "", // valid name: must NOT redirect
+		"/a%20b":                      "invalido",
+		"/-bad":                       "invalido",
+		"/UPPER":                      "", // case-insensitive, valid
+	}
+	for path, code := range cases {
+		w := e.do("GET", path)
+		if code == "" {
+			if w.Code != 200 {
+				t.Errorf("%s: want the page (200), got %d", path, w.Code)
+			}
+			continue
 		}
+		if w.Code != http.StatusFound || w.Header().Get("Location") != "/?erro="+code {
+			t.Errorf("%s: want 302 -> /?erro=%s, got %d -> %q", path, code, w.Code, w.Header().Get("Location"))
+		}
+	}
+}
+
+func TestTrailingSlashRedirectsToMailbox(t *testing.T) {
+	e := setup(t, nil)
+	w := e.do("GET", "/minha-caixa/")
+	if w.Code != http.StatusFound || w.Header().Get("Location") != "/minha-caixa" {
+		t.Fatalf("got %d -> %q", w.Code, w.Header().Get("Location"))
+	}
+}
+
+func TestVisitingMailboxPageDoesNotCreateItByItself(t *testing.T) {
+	// Creation is done by the page via PUT; the HTML route has no side effects,
+	// so crawlers and link previews cannot fill the store.
+	e := setup(t, nil)
+	e.do("GET", "/some-crawled-name")
+	if s := e.st.Stats(); s.Inboxes != 0 {
+		t.Fatalf("GET of the page created %d inboxes", s.Inboxes)
 	}
 }
 

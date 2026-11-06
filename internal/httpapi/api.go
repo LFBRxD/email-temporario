@@ -75,13 +75,38 @@ func NewHandler(o Options) http.Handler {
 			files.ServeHTTP(w, r)
 			return
 		}
-		if !inbox.ValidName(strings.ToLower(name)) {
-			http.NotFound(w, r)
+		if err := inbox.CheckName(strings.ToLower(name)); err != nil {
+			// Bad name: back to the welcome page, which explains why.
+			http.Redirect(w, r, "/?erro="+nameErrorCode(err), http.StatusFound)
 			return
 		}
 		http.ServeFileFS(w, r, sub, "index.html")
 	})
+	// "/name/" (trailing slash) is the same mailbox; deeper paths are unknown.
+	mux.HandleFunc("GET /{name}/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/"+r.PathValue("name")+"/" {
+			http.NotFound(w, r)
+			return
+		}
+		http.Redirect(w, r, "/"+r.PathValue("name"), http.StatusFound)
+	})
 	return securityHeaders(mux)
+}
+
+// nameErrorCode is the short code the welcome page turns into a message.
+// Codes (not free text) travel in the URL so the page never renders
+// attacker-supplied text.
+func nameErrorCode(err error) string {
+	switch {
+	case errors.Is(err, inbox.ErrNameTooShort):
+		return "curto"
+	case errors.Is(err, inbox.ErrNameTooLong):
+		return "longo"
+	case errors.Is(err, inbox.ErrNameReserved):
+		return "reservado"
+	default:
+		return "invalido"
+	}
 }
 
 func (a *api) limited(next http.HandlerFunc) http.Handler {
@@ -165,7 +190,7 @@ func (a *api) create(w http.ResponseWriter, r *http.Request) {
 func writeCreateErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, inbox.ErrBadName):
-		writeErr(w, http.StatusBadRequest, "name must be 3-32 chars of [a-z0-9._-], starting with a letter or digit")
+		writeErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, inbox.ErrTaken):
 		writeErr(w, http.StatusConflict, "address already in use")
 	case errors.Is(err, inbox.ErrCapacity):
